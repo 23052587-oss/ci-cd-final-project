@@ -1,22 +1,24 @@
+# Use an official lightweight Python image
 FROM python:3.9-slim
 
-# Establish a working folder
+# Set working directory inside the container
 WORKDIR /app
 
-# Establish dependencies
+# Copy requirements framework specifications first to leverage caching layers
 COPY requirements.txt .
-RUN python -m pip install -U pip wheel && \
-    pip install -r requirements.txt
 
-# Copy source files last because they change the most
-COPY service ./service
+# Install dependencies cleanly
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Become non-root user
-RUN useradd -m -r service && \
-    chown -R service:service /app
-USER service
+# Copy the application source code into the image container
+COPY . .
 
-# Run the service on port 8000
-ENV PORT 8000
-EXPOSE $PORT
-CMD ["gunicorn", "service:app", "--bind", "0.0.0.0:8000"]
+# Expose production port
+EXPOSE 8080
+
+# Environment variable configuration for production Flask systems
+ENV PORT=8080
+ENV FLASK_APP=service:app
+
+# Command to run the application using a production WSGI server
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "service:app"]
